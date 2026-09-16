@@ -30,7 +30,7 @@ html, body {
   left: 16px;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: var(--parchment);
   border: 1.5px solid var(--ink);
   color: var(--ink);
@@ -69,6 +69,14 @@ html, body {
 
 #legend-panel input[type="checkbox"] {
   accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.legend-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--ink);
+  flex-shrink: 0;
 }
 
 .hidden {

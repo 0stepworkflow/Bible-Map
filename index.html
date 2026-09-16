@@ -20,9 +20,21 @@
 
 <div id="legend-panel" class="hidden">
   <p class="legend-title">Legend</p>
-  <label><input type="checkbox" data-category="person" checked> People</label>
-  <label><input type="checkbox" data-category="event" checked> Events</label>
-  <label><input type="checkbox" data-category="landmark" checked> Landmarks</label>
+  <label>
+    <input type="checkbox" data-category="person" checked>
+    <svg class="legend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+    People
+  </label>
+  <label>
+    <input type="checkbox" data-category="event" checked>
+    <svg class="legend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
+    Events
+  </label>
+  <label>
+    <input type="checkbox" data-category="landmark" checked>
+    <svg class="legend-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3l8 15H4l8-15z"/><path d="M9 13h6"/></svg>
+    Landmarks
+  </label>
 </div>
 
 <div id="info-panel" class="hidden">
