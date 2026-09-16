@@ -1,0 +1,16 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "name": "Egypt" }, "geometry": { "type": "Point", "coordinates": [30.8, 27.2] } },
+    { "type": "Feature", "properties": { "name": "Israel" }, "geometry": { "type": "Point", "coordinates": [35.25, 32.2] } },
+    { "type": "Feature", "properties": { "name": "Philistia" }, "geometry": { "type": "Point", "coordinates": [34.6, 31.7] } },
+    { "type": "Feature", "properties": { "name": "Phoenicia" }, "geometry": { "type": "Point", "coordinates": [35.55, 34.1] } },
+    { "type": "Feature", "properties": { "name": "Aram" }, "geometry": { "type": "Point", "coordinates": [36.6, 34.5] } },
+    { "type": "Feature", "properties": { "name": "Ammon" }, "geometry": { "type": "Point", "coordinates": [35.93, 31.95] } },
+    { "type": "Feature", "properties": { "name": "Moab" }, "geometry": { "type": "Point", "coordinates": [35.7, 31.18] } },
+    { "type": "Feature", "properties": { "name": "Edom" }, "geometry": { "type": "Point", "coordinates": [35.47, 30.6] } },
+    { "type": "Feature", "properties": { "name": "Assyria" }, "geometry": { "type": "Point", "coordinates": [43.15, 36.35] } },
+    { "type": "Feature", "properties": { "name": "Babylon" }, "geometry": { "type": "Point", "coordinates": [44.42, 32.54] } },
+    { "type": "Feature", "properties": { "name": "Persia" }, "geometry": { "type": "Point", "coordinates": [53.0, 30.0] } }
+  ]
+}

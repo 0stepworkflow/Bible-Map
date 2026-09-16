@@ -16,6 +16,7 @@ const map = new maplibregl.Map({
   maxZoom: 12,
   style: {
     version: 8,
+    glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
     sources: {
       terrain: {
         type: 'raster-dem',
@@ -23,6 +24,14 @@ const map = new maplibregl.Map({
         encoding: 'terrarium',
         tileSize: 256,
         maxzoom: 13
+      },
+      regions: {
+        type: 'geojson',
+        data: 'data/regions.geojson'
+      },
+      seas: {
+        type: 'geojson',
+        data: 'data/seas.geojson'
       },
       locations: {
         type: 'geojson',
@@ -44,6 +53,37 @@ const map = new maplibregl.Map({
           'hillshade-highlight-color': PALETTE.parchment,
           'hillshade-accent-color': PALETTE.highland,
           'hillshade-exaggeration': 0.6
+        }
+      },
+      {
+        id: 'region-labels',
+        type: 'symbol',
+        source: 'regions',
+        layout: {
+          'text-field': ['upcase', ['get', 'name']],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 3, 11, 8, 18],
+          'text-letter-spacing': 0.08
+        },
+        paint: {
+          'text-color': PALETTE.ink,
+          'text-halo-color': PALETTE.lowland,
+          'text-halo-width': 1.4
+        }
+      },
+      {
+        id: 'sea-labels',
+        type: 'symbol',
+        source: 'seas',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Italic'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 3, 10, 8, 15]
+        },
+        paint: {
+          'text-color': PALETTE.ink,
+          'text-halo-color': PALETTE.lowland,
+          'text-halo-width': 1.4
         }
       },
       {
