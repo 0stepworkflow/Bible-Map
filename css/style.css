@@ -152,30 +152,88 @@ html, body {
 
 #timeline-bar {
   position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(520px, calc(100% - 32px));
-  background: var(--parchment);
-  border: 1.5px solid var(--ink);
-  border-radius: 999px;
-  padding: 10px 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, rgba(40, 54, 24, 0.45), rgba(40, 54, 24, 0.22) 65%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
   z-index: 2;
 }
 
-#timeline-year {
-  font-size: 13px;
-  font-weight: 600;
-  min-width: 66px;
-  text-align: center;
+#timeline-bar.dragging {
+  cursor: grabbing;
 }
 
-#timeline-slider {
-  flex: 1;
-  accent-color: var(--accent);
+#timeline-track {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  height: 32px;
+  will-change: transform;
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: rgba(254, 250, 224, 0.4);
+}
+
+.tick.major {
+  height: 16px;
+  background: rgba(254, 250, 224, 0.85);
+}
+
+.tick.minor {
+  height: 8px;
+}
+
+.tick-label {
+  position: absolute;
+  top: 22px;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: var(--parchment);
+  white-space: nowrap;
+}
+
+#timeline-center {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#timeline-year-bubble {
+  margin-top: 6px;
+  background: var(--accent);
+  color: var(--parchment);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+#timeline-dot {
+  margin-top: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--parchment);
+  border: 3px solid var(--accent);
 }
 
 @media (max-width: 640px) {
