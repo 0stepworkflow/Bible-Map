@@ -4,21 +4,73 @@
     {
       "type": "Feature",
       "properties": {
-        "id": "sample-location",
-        "name": "Sample location (placeholder)",
-        "category": "landmark",
-        "summary": "Placeholder summary text. Real content gets filled in later, starting with Peter as the first example.",
-        "timeline": [
-          { "date": "c. 0000", "label": "Placeholder timeline event one" },
-          { "date": "c. 0000", "label": "Placeholder timeline event two" }
+        "id": "peter",
+        "name": "Peter (Simon Peter)",
+        "category": "person",
+        "bioIntro": "Simon Peter was a Galilean fisherman who became one of Jesus's closest disciples and a leading voice in the early church.",
+        "bioBullets": [
+          "A fisherman from Capernaum on the Sea of Galilee",
+          "Called by Jesus to leave his nets and follow him",
+          "Part of Jesus's inner circle of three, alongside James and John",
+          "Given the name \"Peter\" (\"the rock\") by Jesus",
+          "Denied knowing Jesus three times before the crucifixion",
+          "Restored by Jesus after the resurrection",
+          "Preached the first public sermon of the church at Pentecost",
+          "Traditional death c. AD 64 under Nero's persecution — this comes from early church history, not Scripture itself"
         ],
-        "reference": "Book 0:0-0",
-        "startYear": -1000,
-        "endYear": -900
+        "route": [
+          {
+            "id": "peter-calling",
+            "name": "Called as a disciple",
+            "date": "c. AD 27",
+            "citation": "Luke 5:1-11",
+            "story": "While preaching by the Sea of Galilee, Jesus borrowed Peter's boat to teach the crowd. Afterward he told Peter to cast his nets again — after a fruitless night, they came up overflowing with fish. Stunned, Peter left everything to follow Jesus.",
+            "lng": 35.575,
+            "lat": 32.881
+          },
+          {
+            "id": "peter-confession",
+            "name": "Declares Jesus the Messiah",
+            "date": "c. AD 29",
+            "citation": "Matthew 16:13-19",
+            "story": "Near Caesarea Philippi, Jesus asked who the disciples believed he was. Peter answered that he was the Messiah, the Son of God. Jesus affirmed Peter's insight, renamed him \"Peter\" (the rock), and said his church would be built on this declaration.",
+            "lng": 35.694,
+            "lat": 33.249
+          },
+          {
+            "id": "peter-denial",
+            "name": "Denies knowing Jesus",
+            "date": "AD 30",
+            "citation": "Luke 22:54-62",
+            "story": "After Jesus's arrest, Peter followed at a distance into the high priest's courtyard. Three separate times he denied knowing Jesus — just as Jesus had predicted. When a rooster crowed after the third denial, Peter realized what he had done and wept bitterly.",
+            "lng": 35.226,
+            "lat": 31.779
+          },
+          {
+            "id": "peter-restoration",
+            "name": "Restored by Jesus",
+            "date": "AD 30",
+            "citation": "John 21:15-19",
+            "story": "After the resurrection, Jesus met the disciples again by the Sea of Galilee. He asked Peter three times if he loved him — mirroring Peter's three denials — and each time told him to care for his followers. It was a public restoration and a commissioning to lead.",
+            "lng": 35.544,
+            "lat": 32.869
+          },
+          {
+            "id": "peter-pentecost",
+            "name": "Preaches at Pentecost",
+            "date": "AD 30",
+            "citation": "Acts 2:14-41",
+            "story": "Fifty days after the resurrection, the Holy Spirit came upon the disciples in Jerusalem. Peter stood and preached to the crowd that Jesus was the promised Messiah, raised from the dead. About 3,000 people believed that day, marking the beginning of the church.",
+            "lng": 35.226,
+            "lat": 31.779
+          }
+        ],
+        "startYear": 27,
+        "endYear": 64
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [35.3, 31.85]
+        "coordinates": [35.575, 32.881]
       }
     }
   ]

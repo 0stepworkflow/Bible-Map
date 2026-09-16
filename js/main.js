@@ -50,6 +50,14 @@ const map = new maplibregl.Map({
       locations: {
         type: 'geojson',
         data: 'data/locations.geojson'
+      },
+      'route-line': {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
+      },
+      'route-stops': {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
       }
     },
     layers: [
@@ -166,6 +174,62 @@ const map = new maplibregl.Map({
           'circle-opacity': 1,
           'circle-stroke-opacity': 1
         }
+      },
+      {
+        id: 'route-line-layer',
+        type: 'line',
+        source: 'route-line',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': PALETTE.accent,
+          'line-width': 2.5,
+          'line-dasharray': [1, 1.4]
+        }
+      },
+      {
+        id: 'route-stops-circle',
+        type: 'circle',
+        source: 'route-stops',
+        paint: {
+          'circle-radius': 10,
+          'circle-color': PALETTE.accent,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': PALETTE.parchment
+        }
+      },
+      {
+        id: 'route-stops-number',
+        type: 'symbol',
+        source: 'route-stops',
+        layout: {
+          'text-field': ['get', 'index'],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 12
+        },
+        paint: {
+          'text-color': PALETTE.parchment
+        }
+      },
+      {
+        id: 'route-stops-label',
+        type: 'symbol',
+        source: 'route-stops',
+        layout: {
+          'text-field': ['format',
+            ['get', 'name'], { 'font-scale': 1.05 },
+            '\n', {},
+            ['get', 'citation'], { 'font-scale': 0.85 }
+          ],
+          'text-font': ['Noto Sans Bold'],
+          'text-size': 12,
+          'text-anchor': 'top',
+          'text-offset': [0, 1.4]
+        },
+        paint: {
+          'text-color': PALETTE.ink,
+          'text-halo-color': PALETTE.parchment,
+          'text-halo-width': 1.6
+        }
       }
     ]
   }
@@ -209,6 +273,10 @@ function formatYear(year) {
 }
 
 function openInfoPanel(props) {
+  document.getElementById('info-back').classList.add('hidden');
+  document.getElementById('info-bullets').classList.add('hidden');
+  document.getElementById('info-bullets').innerHTML = '';
+
   document.getElementById('info-category').textContent = props.category;
   document.getElementById('info-name').textContent = props.name;
   document.getElementById('info-summary').textContent = props.summary;
@@ -227,9 +295,101 @@ function openInfoPanel(props) {
   document.getElementById('info-panel').classList.remove('hidden');
 }
 
+let focusLevel = 0;
+let activePerson = null;
+const EMPTY_FC = { type: 'FeatureCollection', features: [] };
+
+function buildRouteGeoJSON(route) {
+  const lineFeature = {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'LineString', coordinates: route.map(function (s) { return [s.lng, s.lat]; }) }
+  };
+  const stopFeatures = route.map(function (stop, i) {
+    return {
+      type: 'Feature',
+      properties: {
+        id: stop.id,
+        index: i + 1,
+        name: stop.name,
+        date: stop.date,
+        citation: stop.citation,
+        story: stop.story
+      },
+      geometry: { type: 'Point', coordinates: [stop.lng, stop.lat] }
+    };
+  });
+  return {
+    line: { type: 'FeatureCollection', features: [lineFeature] },
+    stops: { type: 'FeatureCollection', features: stopFeatures }
+  };
+}
+
+function clearRoute() {
+  map.getSource('route-line').setData(EMPTY_FC);
+  map.getSource('route-stops').setData(EMPTY_FC);
+}
+
+function openPersonFocus(props) {
+  focusLevel = 1;
+  activePerson = props;
+  focusedId = props.id;
+  applyFocusStyle();
+
+  const bullets = JSON.parse(props.bioBullets);
+  const route = JSON.parse(props.route);
+  const built = buildRouteGeoJSON(route);
+  map.getSource('route-line').setData(built.line);
+  map.getSource('route-stops').setData(built.stops);
+
+  document.getElementById('info-back').classList.add('hidden');
+  document.getElementById('info-category').textContent = props.category;
+  document.getElementById('info-name').textContent = props.name;
+  document.getElementById('info-summary').textContent = props.bioIntro;
+
+  const bulletsEl = document.getElementById('info-bullets');
+  bulletsEl.innerHTML = '';
+  bullets.forEach(function (b) {
+    const li = document.createElement('li');
+    li.textContent = b;
+    bulletsEl.appendChild(li);
+  });
+  bulletsEl.classList.remove('hidden');
+
+  document.getElementById('info-timeline').innerHTML = '';
+  document.getElementById('info-reference').textContent = '';
+
+  document.getElementById('info-panel').classList.remove('hidden');
+
+  const bounds = route.reduce(function (b, s) {
+    return b.extend([s.lng, s.lat]);
+  }, new maplibregl.LngLatBounds([route[0].lng, route[0].lat], [route[0].lng, route[0].lat]));
+  map.fitBounds(bounds, { padding: 80, maxZoom: 8 });
+}
+
+function openRouteStopFocus(stopProps, coordinates) {
+  focusLevel = 2;
+
+  document.getElementById('info-back').classList.remove('hidden');
+  document.getElementById('info-category').textContent = activePerson.category;
+  document.getElementById('info-name').textContent = stopProps.name;
+  document.getElementById('info-summary').textContent = stopProps.story;
+  document.getElementById('info-bullets').classList.add('hidden');
+  document.getElementById('info-bullets').innerHTML = '';
+  document.getElementById('info-timeline').innerHTML = '';
+  document.getElementById('info-reference').textContent = stopProps.citation;
+
+  document.getElementById('info-panel').classList.remove('hidden');
+
+  map.flyTo({ center: coordinates, zoom: Math.max(map.getZoom(), 8), speed: 0.8 });
+}
+
 function closeInfoPanel() {
   document.getElementById('info-panel').classList.add('hidden');
   focusedId = null;
+  focusLevel = 0;
+  activePerson = null;
+  clearRoute();
   applyFocusStyle();
 }
 
@@ -245,6 +405,11 @@ map.on('load', function () {
     const feature = e.features[0];
     const props = feature.properties;
 
+    if (props.route) {
+      openPersonFocus(props);
+      return;
+    }
+
     focusedId = props.id;
     applyFocusStyle();
 
@@ -257,15 +422,28 @@ map.on('load', function () {
     openInfoPanel(props);
   });
 
-  map.on('mouseenter', 'location-points', function () {
-    map.getCanvas().style.cursor = 'pointer';
+  map.on('click', 'route-stops-circle', function (e) {
+    const feature = e.features[0];
+    openRouteStopFocus(feature.properties, feature.geometry.coordinates);
   });
-  map.on('mouseleave', 'location-points', function () {
-    map.getCanvas().style.cursor = '';
+
+  ['location-points', 'route-stops-circle'].forEach(function (layerId) {
+    map.on('mouseenter', layerId, function () {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', layerId, function () {
+      map.getCanvas().style.cursor = '';
+    });
   });
 });
 
 document.getElementById('info-close').addEventListener('click', closeInfoPanel);
+
+document.getElementById('info-back').addEventListener('click', function () {
+  if (activePerson) {
+    openPersonFocus(activePerson);
+  }
+});
 
 const TIMELINE_MIN_YEAR = -2000;
 const TIMELINE_MAX_YEAR = 100;
