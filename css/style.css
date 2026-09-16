@@ -150,6 +150,34 @@ html, body {
   margin: 0;
 }
 
+#timeline-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(520px, calc(100% - 32px));
+  background: var(--parchment);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 2;
+}
+
+#timeline-year {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 66px;
+  text-align: center;
+}
+
+#timeline-slider {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
 @media (max-width: 640px) {
   #info-panel {
     top: auto;

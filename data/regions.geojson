@@ -1,16 +1,17 @@
 {
   "type": "FeatureCollection",
   "features": [
-    { "type": "Feature", "properties": { "name": "Egypt" }, "geometry": { "type": "Point", "coordinates": [30.8, 27.2] } },
-    { "type": "Feature", "properties": { "name": "Israel" }, "geometry": { "type": "Point", "coordinates": [35.25, 32.2] } },
-    { "type": "Feature", "properties": { "name": "Philistia" }, "geometry": { "type": "Point", "coordinates": [34.6, 31.7] } },
-    { "type": "Feature", "properties": { "name": "Phoenicia" }, "geometry": { "type": "Point", "coordinates": [35.55, 34.1] } },
-    { "type": "Feature", "properties": { "name": "Aram" }, "geometry": { "type": "Point", "coordinates": [36.6, 34.5] } },
-    { "type": "Feature", "properties": { "name": "Ammon" }, "geometry": { "type": "Point", "coordinates": [35.93, 31.95] } },
-    { "type": "Feature", "properties": { "name": "Moab" }, "geometry": { "type": "Point", "coordinates": [35.7, 31.18] } },
-    { "type": "Feature", "properties": { "name": "Edom" }, "geometry": { "type": "Point", "coordinates": [35.47, 30.6] } },
-    { "type": "Feature", "properties": { "name": "Assyria" }, "geometry": { "type": "Point", "coordinates": [43.15, 36.35] } },
-    { "type": "Feature", "properties": { "name": "Babylon" }, "geometry": { "type": "Point", "coordinates": [44.42, 32.54] } },
-    { "type": "Feature", "properties": { "name": "Persia" }, "geometry": { "type": "Point", "coordinates": [53.0, 30.0] } }
+    { "type": "Feature", "properties": { "name": "Egypt", "startYear": -2000, "endYear": 100, "note": "Major continuous power throughout the biblical narrative; not given a fade window." }, "geometry": { "type": "Point", "coordinates": [30.8, 27.2] } },
+    { "type": "Feature", "properties": { "name": "Israel", "startYear": -1047, "endYear": -722, "note": "Covers united kingdom (1047-930 BC) and northern kingdom (930-722 BC); see kingdoms.geojson for boundary changes at the split." }, "geometry": { "type": "Point", "coordinates": [35.195, 32.276] } },
+    { "type": "Feature", "properties": { "name": "Judah", "startYear": -930, "endYear": -586, "note": "Southern kingdom after the split from Israel; ends with the fall of Jerusalem to Babylon." }, "geometry": { "type": "Point", "coordinates": [35.15, 31.75] } },
+    { "type": "Feature", "properties": { "name": "Philistia", "startYear": -1175, "endYear": -400, "note": "Distinct culture from the Late Bronze Age collapse to disappearance after Babylonian conquest (604/603 BC)." }, "geometry": { "type": "Point", "coordinates": [34.6, 31.7] } },
+    { "type": "Feature", "properties": { "name": "Phoenicia", "startYear": -1200, "endYear": -332, "note": "City-state independence (Tyre, Sidon) ending with Alexander's conquest." }, "geometry": { "type": "Point", "coordinates": [35.55, 34.1] } },
+    { "type": "Feature", "properties": { "name": "Aram", "startYear": -1100, "endYear": -732, "note": "Aram-Damascus, ending with Assyrian conquest (2 Kings 16:9)." }, "geometry": { "type": "Point", "coordinates": [36.6, 34.5] } },
+    { "type": "Feature", "properties": { "name": "Ammon", "startYear": -1100, "endYear": -332, "note": "Kingdom of Ammon, ending with Alexander's conquest." }, "geometry": { "type": "Point", "coordinates": [35.93, 31.95] } },
+    { "type": "Feature", "properties": { "name": "Moab", "startYear": -1300, "endYear": -400, "note": "Kingdom of Moab's attested independent span." }, "geometry": { "type": "Point", "coordinates": [35.7, 31.18] } },
+    { "type": "Feature", "properties": { "name": "Edom", "startYear": -1300, "endYear": -553, "note": "Kingdom of Edom, ending with Babylonian conquest under Nabonidus." }, "geometry": { "type": "Point", "coordinates": [35.47, 30.6] } },
+    { "type": "Feature", "properties": { "name": "Assyria", "startYear": -911, "endYear": -609, "note": "Neo-Assyrian Empire; Nineveh fell 612 BC, final collapse 609 BC." }, "geometry": { "type": "Point", "coordinates": [43.15, 36.35] } },
+    { "type": "Feature", "properties": { "name": "Babylon", "startYear": -626, "endYear": -539, "note": "Neo-Babylonian Empire, Nabopolassar to the fall to Cyrus of Persia." }, "geometry": { "type": "Point", "coordinates": [44.42, 32.54] } },
+    { "type": "Feature", "properties": { "name": "Persia", "startYear": -550, "endYear": -330, "note": "Achaemenid Empire, Cyrus the Great to Alexander's conquest." }, "geometry": { "type": "Point", "coordinates": [53.0, 30.0] } }
   ]
 }

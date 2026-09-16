@@ -1,0 +1,78 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "United Kingdom of Israel",
+        "startYear": -1047,
+        "endYear": -930,
+        "note": "Approximate reconstruction of Saul/David/Solomon-era territory (\"from Dan to Beersheba\" plus Transjordan), based on standard Bible atlas depictions — not precise survey data. Dates c. 1047–930 BC per verified historical consensus; exact borders are not archaeologically fixed."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [35.652, 33.249],
+          [36.0, 32.9],
+          [35.95, 32.3],
+          [35.93, 31.95],
+          [35.75, 31.3],
+          [35.42, 31.03],
+          [34.7867, 31.2522],
+          [34.5, 31.1],
+          [34.65, 31.55],
+          [34.753, 32.052],
+          [34.95, 32.83],
+          [35.652, 33.249]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Israel",
+        "startYear": -930,
+        "endYear": -722,
+        "note": "Approximate reconstruction of the northern kingdom's territory after the split from Judah, based on standard Bible atlas depictions — not precise survey data. Dates c. 930–722 BC per verified historical consensus."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [35.652, 33.249],
+          [36.0, 32.9],
+          [35.95, 32.3],
+          [35.85, 32.0],
+          [35.5, 31.95],
+          [35.245, 31.923],
+          [34.93, 32.10],
+          [34.753, 32.052],
+          [34.95, 32.83],
+          [35.652, 33.249]
+        ]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Judah",
+        "startYear": -930,
+        "endYear": -586,
+        "note": "Approximate reconstruction of the southern kingdom's territory after the split from Israel, based on standard Bible atlas depictions — not precise survey data. Dates c. 930–586 BC per verified historical consensus (fall of Jerusalem)."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [35.245, 31.923],
+          [35.49, 31.85],
+          [35.45, 31.4],
+          [35.42, 31.03],
+          [34.7867, 31.2522],
+          [34.65, 31.55],
+          [34.75, 31.75],
+          [35.0, 31.85],
+          [35.245, 31.923]
+        ]]
+      }
+    }
+  ]
+}

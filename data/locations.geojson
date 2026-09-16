@@ -12,11 +12,13 @@
           { "date": "c. 0000", "label": "Placeholder timeline event one" },
           { "date": "c. 0000", "label": "Placeholder timeline event two" }
         ],
-        "reference": "Book 0:0-0"
+        "reference": "Book 0:0-0",
+        "startYear": -1000,
+        "endYear": -900
       },
       "geometry": {
         "type": "Point",
-        "coordinates": [35.5, 31.5]
+        "coordinates": [35.3, 31.85]
       }
     }
   ]

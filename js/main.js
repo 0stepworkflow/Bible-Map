@@ -5,7 +5,9 @@ const PALETTE = {
   highland: '#D4A373',
   water: '#CCD5AE',
   ink: '#283618',
-  accent: '#BC6C25'
+  accent: '#BC6C25',
+  waterFill: '#6E96A3',
+  waterLine: '#3F5C66'
 };
 
 const map = new maplibregl.Map({
@@ -24,6 +26,18 @@ const map = new maplibregl.Map({
         encoding: 'terrarium',
         tileSize: 256,
         maxzoom: 13
+      },
+      'water-areas': {
+        type: 'geojson',
+        data: 'data/water-areas.geojson'
+      },
+      'water-rivers': {
+        type: 'geojson',
+        data: 'data/water-rivers.geojson'
+      },
+      kingdoms: {
+        type: 'geojson',
+        data: 'data/kingdoms.geojson'
       },
       regions: {
         type: 'geojson',
@@ -53,6 +67,60 @@ const map = new maplibregl.Map({
           'hillshade-highlight-color': PALETTE.parchment,
           'hillshade-accent-color': PALETTE.highland,
           'hillshade-exaggeration': 0.6
+        }
+      },
+      {
+        id: 'water-fill',
+        type: 'fill',
+        source: 'water-areas',
+        paint: {
+          'fill-color': PALETTE.waterFill,
+          'fill-opacity': 0.85
+        }
+      },
+      {
+        id: 'water-outline',
+        type: 'line',
+        source: 'water-areas',
+        paint: {
+          'line-color': PALETTE.waterLine,
+          'line-width': 0.8
+        }
+      },
+      {
+        id: 'river-lines',
+        type: 'line',
+        source: 'water-rivers',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round'
+        },
+        paint: {
+          'line-color': PALETTE.waterFill,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 4, 0.8, 8, 2.5]
+        }
+      },
+      {
+        id: 'kingdom-fill',
+        type: 'fill',
+        source: 'kingdoms',
+        paint: {
+          'fill-color': PALETTE.ink,
+          'fill-opacity': 0
+        }
+      },
+      {
+        id: 'kingdom-outline',
+        type: 'line',
+        source: 'kingdoms',
+        layout: {
+          'line-join': 'round'
+        },
+        paint: {
+          'line-color': PALETTE.ink,
+          'line-width': 1.3,
+          'line-dasharray': [2, 2],
+          'line-opacity': 0
         }
       },
       {
@@ -104,13 +172,40 @@ const map = new maplibregl.Map({
 });
 
 let focusedId = null;
+let currentYear = -930;
+const FADE_YEARS = 20;
 
-function applyFocusStyle() {
-  const opacityExpr = focusedId
+function timelineOpacityExpr(maxOpacity) {
+  const distanceOutside = [
+    'max',
+    ['-', ['get', 'startYear'], currentYear],
+    ['-', currentYear, ['get', 'endYear']],
+    0
+  ];
+  return ['interpolate', ['linear'], distanceOutside, 0, maxOpacity, FADE_YEARS, 0];
+}
+
+function focusOpacityExpr() {
+  return focusedId
     ? ['case', ['==', ['get', 'id'], focusedId], 1, 0.3]
     : 1;
-  map.setPaintProperty('location-points', 'circle-opacity', opacityExpr);
-  map.setPaintProperty('location-points', 'circle-stroke-opacity', opacityExpr);
+}
+
+function applyFocusStyle() {
+  const combined = ['*', timelineOpacityExpr(1), focusOpacityExpr()];
+  map.setPaintProperty('location-points', 'circle-opacity', combined);
+  map.setPaintProperty('location-points', 'circle-stroke-opacity', combined);
+}
+
+function applyTimelineStyles() {
+  map.setPaintProperty('kingdom-fill', 'fill-opacity', timelineOpacityExpr(0.12));
+  map.setPaintProperty('kingdom-outline', 'line-opacity', timelineOpacityExpr(0.85));
+  map.setPaintProperty('region-labels', 'text-opacity', timelineOpacityExpr(1));
+  applyFocusStyle();
+}
+
+function formatYear(year) {
+  return year < 0 ? Math.abs(year) + ' BC' : 'AD ' + Math.max(year, 1);
 }
 
 function openInfoPanel(props) {
@@ -144,6 +239,7 @@ window.addEventListener('resize', function () {
 
 map.on('load', function () {
   map.resize();
+  applyTimelineStyles();
 
   map.on('click', 'location-points', function (e) {
     const feature = e.features[0];
@@ -170,6 +266,17 @@ map.on('load', function () {
 });
 
 document.getElementById('info-close').addEventListener('click', closeInfoPanel);
+
+const timelineSlider = document.getElementById('timeline-slider');
+const timelineYearLabel = document.getElementById('timeline-year');
+
+timelineYearLabel.textContent = formatYear(currentYear);
+
+timelineSlider.addEventListener('input', function () {
+  currentYear = parseInt(timelineSlider.value, 10);
+  timelineYearLabel.textContent = formatYear(currentYear);
+  applyTimelineStyles();
+});
 
 document.getElementById('legend-toggle').addEventListener('click', function () {
   document.getElementById('legend-panel').classList.toggle('hidden');
