@@ -1,0 +1,23 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "sample-location",
+        "name": "Sample location (placeholder)",
+        "category": "landmark",
+        "summary": "Placeholder summary text. Real content gets filled in later, starting with Peter as the first example.",
+        "timeline": [
+          { "date": "c. 0000", "label": "Placeholder timeline event one" },
+          { "date": "c. 0000", "label": "Placeholder timeline event two" }
+        ],
+        "reference": "Book 0:0-0"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [35.5, 31.5]
+      }
+    }
+  ]
+}
