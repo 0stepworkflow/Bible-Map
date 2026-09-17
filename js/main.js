@@ -58,6 +58,10 @@ const map = new maplibregl.Map({
       'route-stops': {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] }
+      },
+      'route-stop-hints': {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] }
       }
     },
     layers: [
@@ -187,34 +191,13 @@ const map = new maplibregl.Map({
         }
       },
       {
-        id: 'route-stops-circle',
-        type: 'circle',
-        source: 'route-stops',
-        paint: {
-          'circle-radius': 10,
-          'circle-color': PALETTE.accent,
-          'circle-stroke-width': 2,
-          'circle-stroke-color': PALETTE.parchment
-        }
-      },
-      {
-        id: 'route-stops-number',
+        id: 'route-stops-marker',
         type: 'symbol',
         source: 'route-stops',
         layout: {
-          'text-field': ['get', 'index'],
-          'text-font': ['Noto Sans Bold'],
-          'text-size': 12
-        },
-        paint: {
-          'text-color': PALETTE.parchment
-        }
-      },
-      {
-        id: 'route-stops-label',
-        type: 'symbol',
-        source: 'route-stops',
-        layout: {
+          'icon-image': ['concat', 'route-stop-dot-', ['to-string', ['get', 'index']]],
+          'icon-size': 1,
+          'icon-allow-overlap': false,
           'text-field': ['format',
             ['get', 'name'], { 'font-scale': 1.05 },
             '\n', {},
@@ -222,13 +205,27 @@ const map = new maplibregl.Map({
           ],
           'text-font': ['Noto Sans Bold'],
           'text-size': 12,
-          'text-anchor': 'top',
-          'text-offset': [0, 1.4]
+          'text-anchor': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
+          'text-offset': ['case', ['==', ['get', 'labelSide'], 'left'], ['literal', [-1.3, 0]], ['literal', [1.3, 0]]],
+          'text-justify': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
+          'text-allow-overlap': false
         },
         paint: {
           'text-color': PALETTE.ink,
           'text-halo-color': PALETTE.parchment,
           'text-halo-width': 1.6
+        }
+      },
+      {
+        id: 'route-stop-hint-marker',
+        type: 'symbol',
+        source: 'route-stop-hints',
+        layout: {
+          'icon-image': ['concat', 'route-stop-hint-', ['to-string', ['get', 'count']]],
+          'icon-size': 1,
+          'icon-offset': [16, -16],
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true
         }
       }
     ]
@@ -299,7 +296,123 @@ let focusLevel = 0;
 let activePerson = null;
 const EMPTY_FC = { type: 'FeatureCollection', features: [] };
 
+const loadedStopIcons = new Set();
+
+function ensureStopIcon(index) {
+  const id = 'route-stop-dot-' + index;
+  if (loadedStopIcons.has(id)) return;
+
+  const size = 32;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const radius = size / 2;
+
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+  ctx.fillStyle = PALETTE.accent;
+  ctx.fill();
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = PALETTE.parchment;
+  ctx.stroke();
+
+  ctx.fillStyle = PALETTE.parchment;
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(index), radius, radius + 1);
+
+  map.addImage(id, ctx.getImageData(0, 0, size, size));
+  loadedStopIcons.add(id);
+}
+
+const loadedHintIcons = new Set();
+
+function ensureHintIcon(count) {
+  const id = 'route-stop-hint-' + count;
+  if (loadedHintIcons.has(id)) return;
+
+  const size = 20;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const radius = size / 2;
+
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = PALETTE.ink;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = PALETTE.parchment;
+  ctx.stroke();
+
+  ctx.fillStyle = PALETTE.parchment;
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+' + count, radius, radius + 1);
+
+  map.addImage(id, ctx.getImageData(0, 0, size, size));
+  loadedHintIcons.add(id);
+}
+
+let activeRouteStops = [];
+
+function updateStopHints() {
+  if (focusLevel !== 1 || !activeRouteStops.length) {
+    map.getSource('route-stop-hints').setData(EMPTY_FC);
+    return;
+  }
+
+  const visibleIds = new Set(
+    map.queryRenderedFeatures({ layers: ['route-stops-marker'] }).map(function (f) { return f.properties.id; })
+  );
+  const visibleStops = activeRouteStops.filter(function (s) { return visibleIds.has(s.id); });
+  const hiddenStops = activeRouteStops.filter(function (s) { return !visibleIds.has(s.id); });
+
+  if (!hiddenStops.length || !visibleStops.length) {
+    map.getSource('route-stop-hints').setData(EMPTY_FC);
+    return;
+  }
+
+  const NEARBY_PX_THRESHOLD = 60;
+  const hiddenByVisibleId = {};
+  hiddenStops.forEach(function (hidden) {
+    const hiddenPx = map.project([hidden.lng, hidden.lat]);
+    let nearest = null;
+    let nearestDist = Infinity;
+    visibleStops.forEach(function (visible) {
+      const visiblePx = map.project([visible.lng, visible.lat]);
+      const dist = Math.hypot(hiddenPx.x - visiblePx.x, hiddenPx.y - visiblePx.y);
+      if (dist < nearestDist) {
+        nearestDist = dist;
+        nearest = visible;
+      }
+    });
+    if (nearest && nearestDist <= NEARBY_PX_THRESHOLD) {
+      if (!hiddenByVisibleId[nearest.id]) hiddenByVisibleId[nearest.id] = [];
+      hiddenByVisibleId[nearest.id].push(hidden.id);
+    }
+  });
+
+  const hintFeatures = Object.keys(hiddenByVisibleId).map(function (visibleId) {
+    const visible = visibleStops.find(function (s) { return s.id === visibleId; });
+    const hiddenIds = hiddenByVisibleId[visibleId];
+    ensureHintIcon(hiddenIds.length);
+    return {
+      type: 'Feature',
+      properties: { count: hiddenIds.length, hiddenIds: JSON.stringify(hiddenIds) },
+      geometry: { type: 'Point', coordinates: [visible.lng, visible.lat] }
+    };
+  });
+
+  map.getSource('route-stop-hints').setData({ type: 'FeatureCollection', features: hintFeatures });
+}
+
 function buildRouteGeoJSON(route) {
+  route.forEach(function (_, i) { ensureStopIcon(i + 1); });
   const lineFeature = {
     type: 'Feature',
     properties: {},
@@ -314,7 +427,8 @@ function buildRouteGeoJSON(route) {
         name: stop.name,
         date: stop.date,
         citation: stop.citation,
-        story: stop.story
+        story: stop.story,
+        labelSide: stop.labelSide || 'right'
       },
       geometry: { type: 'Point', coordinates: [stop.lng, stop.lat] }
     };
@@ -328,6 +442,8 @@ function buildRouteGeoJSON(route) {
 function clearRoute() {
   map.getSource('route-line').setData(EMPTY_FC);
   map.getSource('route-stops').setData(EMPTY_FC);
+  map.getSource('route-stop-hints').setData(EMPTY_FC);
+  activeRouteStops = [];
 }
 
 function openPersonFocus(props) {
@@ -338,6 +454,7 @@ function openPersonFocus(props) {
 
   const bullets = JSON.parse(props.bioBullets);
   const route = JSON.parse(props.route);
+  activeRouteStops = route;
   const built = buildRouteGeoJSON(route);
   map.getSource('route-line').setData(built.line);
   map.getSource('route-stops').setData(built.stops);
@@ -401,33 +518,60 @@ map.on('load', function () {
   map.resize();
   applyTimelineStyles();
 
-  map.on('click', 'location-points', function (e) {
-    const feature = e.features[0];
-    const props = feature.properties;
+  map.on('moveend', updateStopHints);
 
-    if (props.route) {
-      openPersonFocus(props);
+  map.on('click', function (e) {
+    const personFeatures = map.queryRenderedFeatures(e.point, { layers: ['location-points'] });
+    if (personFeatures.length) {
+      const feature = personFeatures[0];
+      const props = feature.properties;
+
+      if (props.route) {
+        openPersonFocus(props);
+        return;
+      }
+
+      focusedId = props.id;
+      applyFocusStyle();
+
+      map.flyTo({
+        center: feature.geometry.coordinates,
+        zoom: Math.max(map.getZoom(), 7),
+        speed: 0.8
+      });
+
+      openInfoPanel(props);
       return;
     }
 
-    focusedId = props.id;
-    applyFocusStyle();
+    const hintFeatures = map.queryRenderedFeatures(e.point, { layers: ['route-stop-hint-marker'] });
+    if (hintFeatures.length) {
+      const hiddenIds = JSON.parse(hintFeatures[0].properties.hiddenIds);
+      const hiddenStop = activeRouteStops.find(function (s) { return s.id === hiddenIds[0]; });
+      if (hiddenStop) {
+        openRouteStopFocus(
+          {
+            id: hiddenStop.id,
+            index: activeRouteStops.indexOf(hiddenStop) + 1,
+            name: hiddenStop.name,
+            date: hiddenStop.date,
+            citation: hiddenStop.citation,
+            story: hiddenStop.story
+          },
+          [hiddenStop.lng, hiddenStop.lat]
+        );
+      }
+      return;
+    }
 
-    map.flyTo({
-      center: feature.geometry.coordinates,
-      zoom: Math.max(map.getZoom(), 7),
-      speed: 0.8
-    });
-
-    openInfoPanel(props);
+    const stopFeatures = map.queryRenderedFeatures(e.point, { layers: ['route-stops-marker'] });
+    if (stopFeatures.length) {
+      const feature = stopFeatures[0];
+      openRouteStopFocus(feature.properties, feature.geometry.coordinates);
+    }
   });
 
-  map.on('click', 'route-stops-circle', function (e) {
-    const feature = e.features[0];
-    openRouteStopFocus(feature.properties, feature.geometry.coordinates);
-  });
-
-  ['location-points', 'route-stops-circle'].forEach(function (layerId) {
+  ['location-points', 'route-stops-marker', 'route-stop-hint-marker'].forEach(function (layerId) {
     map.on('mouseenter', layerId, function () {
       map.getCanvas().style.cursor = 'pointer';
     });

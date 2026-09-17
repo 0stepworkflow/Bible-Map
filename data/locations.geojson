@@ -43,8 +43,9 @@
             "date": "AD 30",
             "citation": "Luke 22:54-62",
             "story": "After Jesus's arrest, Peter followed at a distance into the high priest's courtyard. Three separate times he denied knowing Jesus — just as Jesus had predicted. When a rooster crowed after the third denial, Peter realized what he had done and wept bitterly.",
-            "lng": 35.226,
-            "lat": 31.779
+            "lng": 35.23194,
+            "lat": 31.77139,
+            "locationNote": "Pinned to the Church of St. Peter in Gallicantu, the traditional (not scripturally specified) site of the high priest's house."
           },
           {
             "id": "peter-restoration",
@@ -53,7 +54,8 @@
             "citation": "John 21:15-19",
             "story": "After the resurrection, Jesus met the disciples again by the Sea of Galilee. He asked Peter three times if he loved him — mirroring Peter's three denials — and each time told him to care for his followers. It was a public restoration and a commissioning to lead.",
             "lng": 35.544,
-            "lat": 32.869
+            "lat": 32.869,
+            "labelSide": "left"
           },
           {
             "id": "peter-pentecost",
@@ -61,8 +63,9 @@
             "date": "AD 30",
             "citation": "Acts 2:14-41",
             "story": "Fifty days after the resurrection, the Holy Spirit came upon the disciples in Jerusalem. Peter stood and preached to the crowd that Jesus was the promised Messiah, raised from the dead. About 3,000 people believed that day, marking the beginning of the church.",
-            "lng": 35.226,
-            "lat": 31.779
+            "lng": 35.229,
+            "lat": 31.7718,
+            "locationNote": "Pinned to the Cenacle (Upper Room), the traditional (not scripturally specified) site of Pentecost."
           }
         ],
         "startYear": 27,
