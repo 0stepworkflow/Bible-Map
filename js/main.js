@@ -53,6 +53,7 @@ const map = new maplibregl.Map({
       },
       'route-line': {
         type: 'geojson',
+        lineMetrics: true,
         data: { type: 'FeatureCollection', features: [] }
       },
       'route-stops': {
@@ -493,6 +494,76 @@ function showStep(index) {
   updateNavControls();
 }
 
+const PULSE_BAND = 0.14;
+const PULSE_SWEEP_MS = 1600;
+const PULSE_GAP_MS = 1600;
+const PULSE_BRIGHT_COLOR = PALETTE.parchment;
+const PULSE_IDLE_GRADIENT = ['interpolate', ['linear'], ['line-progress'], 0, 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'];
+
+let pulseFrameId = null;
+let pulseStartTs = null;
+let pulseInGap = false;
+
+function pulseGradientForCenter(center) {
+  const half = PULSE_BAND;
+  const raw = [
+    { pos: 0, bright: false },
+    { pos: center - half, bright: false },
+    { pos: center, bright: true },
+    { pos: center + half, bright: false },
+    { pos: 1, bright: false }
+  ];
+  const cleaned = [];
+  raw.forEach(function (s) {
+    let pos = Math.max(0, Math.min(1, s.pos));
+    if (cleaned.length && pos <= cleaned[cleaned.length - 1].pos) {
+      pos = cleaned[cleaned.length - 1].pos + 0.0001;
+    }
+    cleaned.push({ pos: pos, bright: s.bright });
+  });
+  const expr = ['interpolate', ['linear'], ['line-progress']];
+  cleaned.forEach(function (s) {
+    expr.push(s.pos, s.bright ? PULSE_BRIGHT_COLOR : 'rgba(0,0,0,0)');
+  });
+  return expr;
+}
+
+function stepPulse(ts) {
+  if (!map.getLayer('route-line-pulse')) {
+    pulseFrameId = null;
+    return;
+  }
+  if (pulseStartTs === null) pulseStartTs = ts;
+  const cycle = PULSE_SWEEP_MS + PULSE_GAP_MS;
+  const elapsed = (ts - pulseStartTs) % cycle;
+
+  if (elapsed <= PULSE_SWEEP_MS) {
+    const t = elapsed / PULSE_SWEEP_MS;
+    const center = -PULSE_BAND + t * (1 + 2 * PULSE_BAND);
+    map.setPaintProperty('route-line-pulse', 'line-gradient', pulseGradientForCenter(center));
+    pulseInGap = false;
+  } else if (!pulseInGap) {
+    map.setPaintProperty('route-line-pulse', 'line-gradient', PULSE_IDLE_GRADIENT);
+    pulseInGap = true;
+  }
+
+  pulseFrameId = requestAnimationFrame(stepPulse);
+}
+
+function startPulseAnimation() {
+  if (pulseFrameId) return;
+  pulseStartTs = null;
+  pulseInGap = false;
+  pulseFrameId = requestAnimationFrame(stepPulse);
+}
+
+function stopPulseAnimation() {
+  if (pulseFrameId) {
+    cancelAnimationFrame(pulseFrameId);
+    pulseFrameId = null;
+  }
+}
+
 function ensureRouteLayers() {
   if (map.getLayer('route-stop-hint-marker')) return;
 
@@ -503,8 +574,20 @@ function ensureRouteLayers() {
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': PALETTE.accent,
-      'line-width': 2.5,
+      'line-width': 5,
       'line-dasharray': [1, 1.4]
+    }
+  });
+
+  map.addLayer({
+    id: 'route-line-pulse',
+    type: 'line',
+    source: 'route-line',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-width': 5.5,
+      'line-blur': 1,
+      'line-gradient': PULSE_IDLE_GRADIENT
     }
   });
 
@@ -558,6 +641,7 @@ function openPersonFocus(props) {
   map.getSource('route-line').setData(built.line);
   map.getSource('route-stops').setData(built.stops);
   ensureRouteLayers();
+  startPulseAnimation();
 
   showStep(0);
 }
@@ -569,6 +653,7 @@ function closeInfoPanel() {
   activePerson = null;
   activeRoute = null;
   currentStepIndex = 0;
+  stopPulseAnimation();
   clearRoute();
   applyFocusStyle();
 }
