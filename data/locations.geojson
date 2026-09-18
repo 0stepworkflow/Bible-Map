@@ -9,14 +9,14 @@
         "category": "person",
         "bioIntro": "Simon Peter was a Galilean fisherman who became one of Jesus's closest disciples and a leading voice in the early church.",
         "bioBullets": [
-          "A fisherman from Capernaum on the Sea of Galilee",
-          "Called by Jesus to leave his nets and follow him",
-          "Part of Jesus's inner circle of three, alongside James and John",
-          "Given the name \"Peter\" (\"the rock\") by Jesus",
-          "Denied knowing Jesus three times before the crucifixion",
-          "Restored by Jesus after the resurrection",
-          "Preached the first public sermon of the church at Pentecost",
-          "Traditional death c. AD 64 under Nero's persecution — this comes from early church history, not Scripture itself"
+          { "text": "A fisherman from Capernaum on the Sea of Galilee", "citation": "Matthew 4:18" },
+          { "text": "Called by Jesus to leave his nets and follow him", "citation": "Luke 5:1-11" },
+          { "text": "Part of Jesus's inner circle of three, alongside James and John", "citation": "Matthew 17:1" },
+          { "text": "Given the name \"Peter\" (\"the rock\") by Jesus", "citation": "John 1:42" },
+          { "text": "Denied knowing Jesus three times before the crucifixion", "citation": "Luke 22:54-62" },
+          { "text": "Restored by Jesus after the resurrection", "citation": "John 21:15-19" },
+          { "text": "Preached the first public sermon of the church at Pentecost", "citation": "Acts 2:14-41" },
+          { "text": "Traditional death c. AD 64 under Nero's persecution — this comes from early church history, not Scripture itself", "citation": null }
         ],
         "route": [
           {

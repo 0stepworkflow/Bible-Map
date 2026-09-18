@@ -136,6 +136,19 @@ const map = new maplibregl.Map({
         }
       },
       {
+        id: 'location-points',
+        type: 'circle',
+        source: 'locations',
+        paint: {
+          'circle-radius': 8,
+          'circle-color': PALETTE.parchment,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': PALETTE.ink,
+          'circle-opacity': 1,
+          'circle-stroke-opacity': 1
+        }
+      },
+      {
         id: 'region-labels',
         type: 'symbol',
         source: 'regions',
@@ -148,7 +161,8 @@ const map = new maplibregl.Map({
         paint: {
           'text-color': PALETTE.ink,
           'text-halo-color': PALETTE.lowland,
-          'text-halo-width': 1.4
+          'text-halo-width': 1.4,
+          'text-opacity': 0.8
         }
       },
       {
@@ -163,69 +177,25 @@ const map = new maplibregl.Map({
         paint: {
           'text-color': PALETTE.ink,
           'text-halo-color': PALETTE.lowland,
-          'text-halo-width': 1.4
+          'text-halo-width': 1.4,
+          'text-opacity': 0.8
         }
       },
       {
-        id: 'location-points',
-        type: 'circle',
-        source: 'locations',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': PALETTE.parchment,
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': PALETTE.ink,
-          'circle-opacity': 1,
-          'circle-stroke-opacity': 1
-        }
-      },
-      {
-        id: 'route-line-layer',
-        type: 'line',
-        source: 'route-line',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': PALETTE.accent,
-          'line-width': 2.5,
-          'line-dasharray': [1, 1.4]
-        }
-      },
-      {
-        id: 'route-stops-marker',
+        id: 'river-labels',
         type: 'symbol',
-        source: 'route-stops',
+        source: 'water-rivers',
         layout: {
-          'icon-image': ['concat', 'route-stop-dot-', ['to-string', ['get', 'index']]],
-          'icon-size': 1,
-          'icon-allow-overlap': false,
-          'text-field': ['format',
-            ['get', 'name'], { 'font-scale': 1.05 },
-            '\n', {},
-            ['get', 'citation'], { 'font-scale': 0.85 }
-          ],
-          'text-font': ['Noto Sans Bold'],
-          'text-size': 12,
-          'text-anchor': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
-          'text-offset': ['case', ['==', ['get', 'labelSide'], 'left'], ['literal', [-1.3, 0]], ['literal', [1.3, 0]]],
-          'text-justify': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
-          'text-allow-overlap': false
+          'symbol-placement': 'line',
+          'text-field': ['get', 'name'],
+          'text-font': ['Noto Sans Italic'],
+          'text-size': 11
         },
         paint: {
-          'text-color': PALETTE.ink,
-          'text-halo-color': PALETTE.parchment,
-          'text-halo-width': 1.6
-        }
-      },
-      {
-        id: 'route-stop-hint-marker',
-        type: 'symbol',
-        source: 'route-stop-hints',
-        layout: {
-          'icon-image': ['concat', 'route-stop-hint-', ['to-string', ['get', 'count']]],
-          'icon-size': 1,
-          'icon-offset': [16, -16],
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true
+          'text-color': PALETTE.waterLine,
+          'text-halo-color': PALETTE.lowland,
+          'text-halo-width': 1.2,
+          'text-opacity': 0.8
         }
       }
     ]
@@ -261,7 +231,7 @@ function applyFocusStyle() {
 function applyTimelineStyles() {
   map.setPaintProperty('kingdom-fill', 'fill-opacity', timelineOpacityExpr(0.12));
   map.setPaintProperty('kingdom-outline', 'line-opacity', timelineOpacityExpr(0.85));
-  map.setPaintProperty('region-labels', 'text-opacity', timelineOpacityExpr(1));
+  map.setPaintProperty('region-labels', 'text-opacity', timelineOpacityExpr(0.8));
   applyFocusStyle();
 }
 
@@ -270,7 +240,7 @@ function formatYear(year) {
 }
 
 function openInfoPanel(props) {
-  document.getElementById('info-back').classList.add('hidden');
+  document.getElementById('info-nav').classList.add('hidden');
   document.getElementById('info-bullets').classList.add('hidden');
   document.getElementById('info-bullets').innerHTML = '';
 
@@ -446,59 +416,150 @@ function clearRoute() {
   activeRouteStops = [];
 }
 
-function openPersonFocus(props) {
-  focusLevel = 1;
-  activePerson = props;
-  focusedId = props.id;
-  applyFocusStyle();
+let activeRoute = null;
+let currentStepIndex = 0;
 
-  const bullets = JSON.parse(props.bioBullets);
-  const route = JSON.parse(props.route);
-  activeRouteStops = route;
-  const built = buildRouteGeoJSON(route);
-  map.getSource('route-line').setData(built.line);
-  map.getSource('route-stops').setData(built.stops);
-
-  document.getElementById('info-back').classList.add('hidden');
-  document.getElementById('info-category').textContent = props.category;
-  document.getElementById('info-name').textContent = props.name;
-  document.getElementById('info-summary').textContent = props.bioIntro;
-
-  const bulletsEl = document.getElementById('info-bullets');
-  bulletsEl.innerHTML = '';
-  bullets.forEach(function (b) {
-    const li = document.createElement('li');
-    li.textContent = b;
-    bulletsEl.appendChild(li);
-  });
-  bulletsEl.classList.remove('hidden');
-
-  document.getElementById('info-timeline').innerHTML = '';
-  document.getElementById('info-reference').textContent = '';
-
-  document.getElementById('info-panel').classList.remove('hidden');
-
+function fitRouteBounds(route) {
   const bounds = route.reduce(function (b, s) {
     return b.extend([s.lng, s.lat]);
   }, new maplibregl.LngLatBounds([route[0].lng, route[0].lat], [route[0].lng, route[0].lat]));
   map.fitBounds(bounds, { padding: 80, maxZoom: 8 });
 }
 
-function openRouteStopFocus(stopProps, coordinates) {
-  focusLevel = 2;
+function updateNavControls() {
+  const nav = document.getElementById('info-nav');
+  if (!activePerson) {
+    nav.classList.add('hidden');
+    return;
+  }
+  const total = activeRoute.length;
+  nav.classList.remove('hidden');
+  document.getElementById('info-prev').disabled = currentStepIndex === 0;
+  document.getElementById('info-next').disabled = currentStepIndex === total;
+  document.getElementById('info-step-label').textContent = currentStepIndex === 0
+    ? 'Overview'
+    : currentStepIndex + ' / ' + total;
+}
 
-  document.getElementById('info-back').classList.remove('hidden');
-  document.getElementById('info-category').textContent = activePerson.category;
-  document.getElementById('info-name').textContent = stopProps.name;
-  document.getElementById('info-summary').textContent = stopProps.story;
-  document.getElementById('info-bullets').classList.add('hidden');
+function showStep(index) {
+  if (!activePerson || !activeRoute) return;
+  currentStepIndex = Math.max(0, Math.min(activeRoute.length, index));
+
   document.getElementById('info-bullets').innerHTML = '';
-  document.getElementById('info-timeline').innerHTML = '';
-  document.getElementById('info-reference').textContent = stopProps.citation;
+
+  if (currentStepIndex === 0) {
+    focusLevel = 1;
+    focusedId = activePerson.id;
+    applyFocusStyle();
+
+    const bullets = JSON.parse(activePerson.bioBullets);
+    document.getElementById('info-category').textContent = activePerson.category;
+    document.getElementById('info-name').textContent = activePerson.name;
+    document.getElementById('info-summary').textContent = activePerson.bioIntro;
+
+    const bulletsEl = document.getElementById('info-bullets');
+    bullets.forEach(function (b) {
+      const li = document.createElement('li');
+      li.appendChild(document.createTextNode(b.text));
+      if (b.citation) {
+        const ref = document.createElement('span');
+        ref.className = 'bullet-ref';
+        ref.textContent = ' ' + b.citation;
+        li.appendChild(ref);
+      }
+      bulletsEl.appendChild(li);
+    });
+    bulletsEl.classList.remove('hidden');
+
+    document.getElementById('info-timeline').innerHTML = '';
+    document.getElementById('info-reference').textContent = '';
+
+    fitRouteBounds(activeRoute);
+  } else {
+    focusLevel = 2;
+    const stop = activeRoute[currentStepIndex - 1];
+
+    document.getElementById('info-category').textContent = activePerson.category;
+    document.getElementById('info-name').textContent = stop.name;
+    document.getElementById('info-summary').textContent = stop.story;
+    document.getElementById('info-bullets').classList.add('hidden');
+    document.getElementById('info-timeline').innerHTML = '';
+    document.getElementById('info-reference').textContent = stop.citation;
+
+    map.flyTo({ center: [stop.lng, stop.lat], zoom: Math.max(map.getZoom(), 8), speed: 0.8 });
+  }
 
   document.getElementById('info-panel').classList.remove('hidden');
+  updateNavControls();
+}
 
-  map.flyTo({ center: coordinates, zoom: Math.max(map.getZoom(), 8), speed: 0.8 });
+function ensureRouteLayers() {
+  if (map.getLayer('route-stop-hint-marker')) return;
+
+  map.addLayer({
+    id: 'route-line-layer',
+    type: 'line',
+    source: 'route-line',
+    layout: { 'line-join': 'round', 'line-cap': 'round' },
+    paint: {
+      'line-color': PALETTE.accent,
+      'line-width': 2.5,
+      'line-dasharray': [1, 1.4]
+    }
+  });
+
+  map.addLayer({
+    id: 'route-stops-marker',
+    type: 'symbol',
+    source: 'route-stops',
+    layout: {
+      'icon-image': ['concat', 'route-stop-dot-', ['to-string', ['get', 'index']]],
+      'icon-size': 1,
+      'icon-allow-overlap': false,
+      'text-field': ['format',
+        ['get', 'name'], { 'font-scale': 1.05 },
+        '\n', {},
+        ['get', 'citation'], { 'font-scale': 0.85 }
+      ],
+      'text-font': ['Noto Sans Bold'],
+      'text-size': 12,
+      'text-anchor': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
+      'text-offset': ['case', ['==', ['get', 'labelSide'], 'left'], ['literal', [-1.3, 0]], ['literal', [1.3, 0]]],
+      'text-justify': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
+      'text-allow-overlap': false
+    },
+    paint: {
+      'text-color': PALETTE.ink,
+      'text-halo-color': PALETTE.parchment,
+      'text-halo-width': 1.6
+    }
+  });
+
+  map.addLayer({
+    id: 'route-stop-hint-marker',
+    type: 'symbol',
+    source: 'route-stop-hints',
+    layout: {
+      'icon-image': ['concat', 'route-stop-hint-', ['to-string', ['get', 'count']]],
+      'icon-size': 1,
+      'icon-offset': [16, -16],
+      'icon-allow-overlap': true,
+      'icon-ignore-placement': true
+    }
+  });
+}
+
+function openPersonFocus(props) {
+  activePerson = props;
+  activeRoute = JSON.parse(props.route);
+  activeRouteStops = activeRoute;
+
+  const built = buildRouteGeoJSON(activeRoute);
+  map.getSource('route-line').setData(built.line);
+  map.getSource('route-stops').setData(built.stops);
+  ensureRouteLayers();
+
+  showStep(0);
 }
 
 function closeInfoPanel() {
@@ -506,6 +567,8 @@ function closeInfoPanel() {
   focusedId = null;
   focusLevel = 0;
   activePerson = null;
+  activeRoute = null;
+  currentStepIndex = 0;
   clearRoute();
   applyFocusStyle();
 }
@@ -544,30 +607,21 @@ map.on('load', function () {
       return;
     }
 
+    if (!map.getLayer('route-stops-marker')) return;
+
     const hintFeatures = map.queryRenderedFeatures(e.point, { layers: ['route-stop-hint-marker'] });
     if (hintFeatures.length) {
       const hiddenIds = JSON.parse(hintFeatures[0].properties.hiddenIds);
-      const hiddenStop = activeRouteStops.find(function (s) { return s.id === hiddenIds[0]; });
-      if (hiddenStop) {
-        openRouteStopFocus(
-          {
-            id: hiddenStop.id,
-            index: activeRouteStops.indexOf(hiddenStop) + 1,
-            name: hiddenStop.name,
-            date: hiddenStop.date,
-            citation: hiddenStop.citation,
-            story: hiddenStop.story
-          },
-          [hiddenStop.lng, hiddenStop.lat]
-        );
+      const hiddenIndex = activeRouteStops.findIndex(function (s) { return s.id === hiddenIds[0]; });
+      if (hiddenIndex !== -1) {
+        showStep(hiddenIndex + 1);
       }
       return;
     }
 
     const stopFeatures = map.queryRenderedFeatures(e.point, { layers: ['route-stops-marker'] });
     if (stopFeatures.length) {
-      const feature = stopFeatures[0];
-      openRouteStopFocus(feature.properties, feature.geometry.coordinates);
+      showStep(stopFeatures[0].properties.index);
     }
   });
 
@@ -583,10 +637,12 @@ map.on('load', function () {
 
 document.getElementById('info-close').addEventListener('click', closeInfoPanel);
 
-document.getElementById('info-back').addEventListener('click', function () {
-  if (activePerson) {
-    openPersonFocus(activePerson);
-  }
+document.getElementById('info-prev').addEventListener('click', function () {
+  showStep(currentStepIndex - 1);
+});
+
+document.getElementById('info-next').addEventListener('click', function () {
+  showStep(currentStepIndex + 1);
 });
 
 const TIMELINE_MIN_YEAR = -2000;
