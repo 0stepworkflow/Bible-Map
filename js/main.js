@@ -10,6 +10,20 @@ const PALETTE = {
   waterLine: '#3F5C66'
 };
 
+let focusedId = null;
+let currentYear = -5;
+const FADE_YEARS = 20;
+
+function timelineOpacityExpr(maxOpacity) {
+  const distanceOutside = [
+    'max',
+    ['-', ['get', 'startYear'], currentYear],
+    ['-', currentYear, ['get', 'endYear']],
+    0
+  ];
+  return ['interpolate', ['linear'], distanceOutside, 0, maxOpacity, FADE_YEARS, 0];
+}
+
 const map = new maplibregl.Map({
   container: 'map',
   center: [35.5, 31.5],
@@ -119,7 +133,7 @@ const map = new maplibregl.Map({
         source: 'kingdoms',
         paint: {
           'fill-color': PALETTE.ink,
-          'fill-opacity': 0
+          'fill-opacity': timelineOpacityExpr(0.12)
         }
       },
       {
@@ -133,7 +147,7 @@ const map = new maplibregl.Map({
           'line-color': PALETTE.ink,
           'line-width': 1.3,
           'line-dasharray': [2, 2],
-          'line-opacity': 0
+          'line-opacity': timelineOpacityExpr(0.85)
         }
       },
       {
@@ -145,8 +159,8 @@ const map = new maplibregl.Map({
           'circle-color': PALETTE.parchment,
           'circle-stroke-width': 1.5,
           'circle-stroke-color': PALETTE.ink,
-          'circle-opacity': 1,
-          'circle-stroke-opacity': 1
+          'circle-opacity': timelineOpacityExpr(1),
+          'circle-stroke-opacity': timelineOpacityExpr(1)
         }
       },
       {
@@ -163,7 +177,7 @@ const map = new maplibregl.Map({
           'text-color': PALETTE.ink,
           'text-halo-color': PALETTE.lowland,
           'text-halo-width': 1.4,
-          'text-opacity': 0.8
+          'text-opacity': timelineOpacityExpr(0.8)
         }
       },
       {
@@ -203,20 +217,6 @@ const map = new maplibregl.Map({
   }
 });
 
-let focusedId = null;
-let currentYear = -930;
-const FADE_YEARS = 20;
-
-function timelineOpacityExpr(maxOpacity) {
-  const distanceOutside = [
-    'max',
-    ['-', ['get', 'startYear'], currentYear],
-    ['-', currentYear, ['get', 'endYear']],
-    0
-  ];
-  return ['interpolate', ['linear'], distanceOutside, 0, maxOpacity, FADE_YEARS, 0];
-}
-
 function focusOpacityExpr() {
   return focusedId
     ? ['case', ['==', ['get', 'id'], focusedId], 1, 0.3]
@@ -238,6 +238,44 @@ function applyTimelineStyles() {
 
 function formatYear(year) {
   return year < 0 ? Math.abs(year) + ' BC' : 'AD ' + Math.max(year, 1);
+}
+
+const BIBLE_BOOK_CODES = {
+  'Genesis': 'GEN', 'Exodus': 'EXO', 'Leviticus': 'LEV', 'Numbers': 'NUM', 'Deuteronomy': 'DEU',
+  'Joshua': 'JOS', 'Judges': 'JDG', 'Ruth': 'RUT', '1 Samuel': '1SA', '2 Samuel': '2SA',
+  '1 Kings': '1KI', '2 Kings': '2KI', '1 Chronicles': '1CH', '2 Chronicles': '2CH', 'Ezra': 'EZR',
+  'Nehemiah': 'NEH', 'Esther': 'EST', 'Job': 'JOB', 'Psalm': 'PSA', 'Psalms': 'PSA', 'Proverbs': 'PRO',
+  'Ecclesiastes': 'ECC', 'Song of Solomon': 'SNG', 'Song of Songs': 'SNG', 'Isaiah': 'ISA',
+  'Jeremiah': 'JER', 'Lamentations': 'LAM', 'Ezekiel': 'EZK', 'Daniel': 'DAN', 'Hosea': 'HOS',
+  'Joel': 'JOL', 'Amos': 'AMO', 'Obadiah': 'OBA', 'Jonah': 'JON', 'Micah': 'MIC', 'Nahum': 'NAM',
+  'Habakkuk': 'HAB', 'Zephaniah': 'ZEP', 'Haggai': 'HAG', 'Zechariah': 'ZEC', 'Malachi': 'MAL',
+  'Matthew': 'MAT', 'Mark': 'MRK', 'Luke': 'LUK', 'John': 'JHN', 'Acts': 'ACT', 'Romans': 'ROM',
+  '1 Corinthians': '1CO', '2 Corinthians': '2CO', 'Galatians': 'GAL', 'Ephesians': 'EPH',
+  'Philippians': 'PHP', 'Colossians': 'COL', '1 Thessalonians': '1TH', '2 Thessalonians': '2TH',
+  '1 Timothy': '1TI', '2 Timothy': '2TI', 'Titus': 'TIT', 'Philemon': 'PHM', 'Hebrews': 'HEB',
+  'James': 'JAS', '1 Peter': '1PE', '2 Peter': '2PE', '1 John': '1JN', '2 John': '2JN', '3 John': '3JN',
+  'Jude': 'JUD', 'Revelation': 'REV'
+};
+
+function bibleUrl(citation) {
+  const m = /^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/.exec(citation.trim());
+  if (!m || !BIBLE_BOOK_CODES[m[1]]) return null;
+  const verses = m[4] ? m[3] + '-' + m[4] : m[3];
+  return 'https://www.bible.com/bible/116/' + BIBLE_BOOK_CODES[m[1]] + '.' + m[2] + '.' + verses + '.NLT';
+}
+
+function makeCitationNode(citation, className) {
+  const url = bibleUrl(citation);
+  const el = document.createElement(url ? 'a' : 'span');
+  if (className) el.className = className;
+  el.textContent = citation;
+  if (url) {
+    el.href = url;
+    el.target = '_blank';
+    el.rel = 'noopener noreferrer';
+    el.title = 'Read ' + citation + ' (NLT) on Bible.com';
+  }
+  return el;
 }
 
 function openInfoPanel(props) {
@@ -463,10 +501,8 @@ function showStep(index) {
       const li = document.createElement('li');
       li.appendChild(document.createTextNode(b.text));
       if (b.citation) {
-        const ref = document.createElement('span');
-        ref.className = 'bullet-ref';
-        ref.textContent = ' ' + b.citation;
-        li.appendChild(ref);
+        li.appendChild(document.createTextNode(' '));
+        li.appendChild(makeCitationNode(b.citation, 'bullet-ref'));
       }
       bulletsEl.appendChild(li);
     });
@@ -485,7 +521,12 @@ function showStep(index) {
     document.getElementById('info-summary').textContent = stop.story;
     document.getElementById('info-bullets').classList.add('hidden');
     document.getElementById('info-timeline').innerHTML = '';
-    document.getElementById('info-reference').textContent = stop.citation;
+    const referenceEl = document.getElementById('info-reference');
+    if (stop.citation) {
+      referenceEl.replaceChildren(makeCitationNode(stop.citation, 'ref-link'));
+    } else {
+      referenceEl.replaceChildren();
+    }
 
     map.flyTo({ center: [stop.lng, stop.lat], zoom: Math.max(map.getZoom(), 8), speed: 0.8 });
   }
@@ -494,9 +535,9 @@ function showStep(index) {
   updateNavControls();
 }
 
-const PULSE_BAND = 0.14;
-const PULSE_SWEEP_MS = 1600;
-const PULSE_GAP_MS = 1600;
+const PULSE_BAND = 0.08;
+const PULSE_SWEEP_MS = 5000;
+const PULSE_GAP_MS = 2500;
 const PULSE_BRIGHT_COLOR = PALETTE.parchment;
 const PULSE_IDLE_GRADIENT = ['interpolate', ['linear'], ['line-progress'], 0, 'rgba(0,0,0,0)', 1, 'rgba(0,0,0,0)'];
 
@@ -538,7 +579,8 @@ function stepPulse(ts) {
   const elapsed = (ts - pulseStartTs) % cycle;
 
   if (elapsed <= PULSE_SWEEP_MS) {
-    const t = elapsed / PULSE_SWEEP_MS;
+    const linear = elapsed / PULSE_SWEEP_MS;
+    const t = linear * linear * (3 - 2 * linear);
     const center = -PULSE_BAND + t * (1 + 2 * PULSE_BAND);
     map.setPaintProperty('route-line-pulse', 'line-gradient', pulseGradientForCenter(center));
     pulseInGap = false;
@@ -574,8 +616,7 @@ function ensureRouteLayers() {
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-color': PALETTE.accent,
-      'line-width': 5,
-      'line-dasharray': [1, 1.4]
+      'line-width': 5
     }
   });
 
@@ -586,7 +627,7 @@ function ensureRouteLayers() {
     layout: { 'line-join': 'round', 'line-cap': 'round' },
     paint: {
       'line-width': 5.5,
-      'line-blur': 1,
+      'line-blur': 2,
       'line-gradient': PULSE_IDLE_GRADIENT
     }
   });

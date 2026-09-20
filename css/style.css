@@ -168,6 +168,24 @@ html, body {
   white-space: nowrap;
 }
 
+a.bullet-ref,
+a.ref-link {
+  text-decoration: underline;
+  text-decoration-color: rgba(188, 108, 37, 0.5);
+  text-underline-offset: 2px;
+}
+
+a.bullet-ref:hover,
+a.ref-link:hover {
+  color: var(--accent);
+  opacity: 1;
+  text-decoration-color: var(--accent);
+}
+
+a.ref-link {
+  color: var(--ink);
+}
+
 .info-category {
   font-size: 12px;
   font-weight: 600;
