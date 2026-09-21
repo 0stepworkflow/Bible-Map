@@ -204,7 +204,7 @@ const map = new maplibregl.Map({
   }
 });
 
-// Map markers: a parchment disc with the locked Set 1 icon inside (see design/icons/set1 and design/brand-guide.md).
+// Map markers: the locked Set 1 icon on its own, drawn larger than in the legend (see design/icons/set1 and design/brand-guide.md).
 // Each icon has a see-through colored wash and a wobbly ink line, made with two small SVG filters.
 const MARKER_ICONS = {
   person: {
@@ -225,6 +225,7 @@ const MARKER_ICONS = {
 };
 
 const MARKER_SIZE = 34;
+const MARKER_ICON_SCALE = 1.3;
 const MARKER_PIXEL_RATIO = 2;
 
 function markerSvg(icon) {
@@ -233,9 +234,8 @@ function markerSvg(icon) {
     '<filter id="wander" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0.7"/></filter>' +
     '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" result="d"/><feGaussianBlur in="d" stdDeviation="0.25"/></filter>' +
     '</defs>' +
-    '<circle cx="17" cy="17" r="16" fill="' + PALETTE.parchment + '" stroke="' + PALETTE.ink + '" stroke-width="1.5"/>' +
-    '<g transform="translate(5 5)">' +
-    '<g filter="url(#wash)" fill="' + icon.wash + '" fill-opacity="0.55" stroke="none">' + icon.shapes + '</g>' +
+    '<g transform="translate(' + (MARKER_SIZE - 24 * MARKER_ICON_SCALE) / 2 + ' ' + (MARKER_SIZE - 24 * MARKER_ICON_SCALE) / 2 + ') scale(' + MARKER_ICON_SCALE + ')">' +
+    '<g filter="url(#wash)" stroke="none"><g fill="' + PALETTE.parchment + '">' + icon.shapes + '</g><g fill="' + icon.wash + '" fill-opacity="0.55">' + icon.shapes + '</g></g>' +
     '<g filter="url(#wander)" fill="none" stroke="' + PALETTE.ink + '" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' + icon.ink + '</g>' +
     '</g></svg>';
 }
@@ -284,6 +284,8 @@ function focusOpacityExpr() {
 
 function applyFocusStyle() {
   if (!map.getLayer('location-points')) return;
+  // While a route is in focus, that person's own marker is removed (the numbered pins take over).
+  map.setFilter('location-points', activePerson ? ['!=', ['get', 'id'], activePerson.id] : null);
   const combined = ['*', timelineOpacityExpr(1), focusOpacityExpr()];
   map.setPaintProperty('location-points', 'icon-opacity', combined);
 }
@@ -760,6 +762,7 @@ function openPersonFocus(props) {
   activeRoute = JSON.parse(props.route);
   activeRouteStops = activeRoute;
 
+  applyFocusStyle();
   const built = buildRouteGeoJSON(activeRoute);
   map.getSource('route-line').setData(built.line);
   map.getSource('route-stops').setData(built.stops);

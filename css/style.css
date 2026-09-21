@@ -85,7 +85,8 @@ html, body {
   margin: 0 0 8px;
 }
 
-#legend-panel label {
+#legend-panel label,
+#legend-panel .legend-static {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -95,6 +96,11 @@ html, body {
 
 #legend-panel input[type="checkbox"] {
   accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.legend-spacer {
+  width: 20px;
   flex-shrink: 0;
 }
 
