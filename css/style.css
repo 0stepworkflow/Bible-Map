@@ -1,3 +1,24 @@
+/* Fonts are hosted on the site (see fonts/ for the files and their open licenses).
+   display: swap shows text right away in a fallback font, then switches when the font arrives.
+   Only the Latin letters are included, which keeps the two files at about 100 KB in total. */
+@font-face {
+  font-family: "Kalam";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/kalam-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Shantell Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("../fonts/shantell-sans-400-700-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 :root {
   --parchment: #FEFAE0;
   --lowland: #FAEDCD;
@@ -6,6 +27,10 @@
   --water: #CCD5AE;
   --ink: #283618;
   --accent: #BC6C25;
+  /* A deeper orange for small text and the year bubble: 5.0 to 1 on the panel, where --accent is only 3.8 to 1. */
+  --accent-text: #985F22;
+  --font-heading: "Kalam", "Segoe Print", "Bradley Hand", cursive;
+  --font-body: "Shantell Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * {
@@ -15,7 +40,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-body);
   color: var(--ink);
 }
 
@@ -54,8 +79,9 @@ html, body {
 }
 
 #legend-panel .legend-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
   margin: 0 0 8px;
 }
 
@@ -73,10 +99,16 @@ html, body {
 }
 
 .legend-icon {
-  width: 18px;
-  height: 18px;
-  color: var(--ink);
+  width: 24px;
+  height: 24px;
   flex-shrink: 0;
+  overflow: visible;
+}
+
+.icon-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
 }
 
 .hidden {
@@ -162,24 +194,24 @@ html, body {
 }
 
 .bullet-ref {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink);
-  opacity: 0.55;
+  opacity: 0.7;
   white-space: nowrap;
 }
 
 a.bullet-ref,
 a.ref-link {
   text-decoration: underline;
-  text-decoration-color: rgba(188, 108, 37, 0.5);
+  text-decoration-color: rgba(152, 95, 34, 0.5);
   text-underline-offset: 2px;
 }
 
 a.bullet-ref:hover,
 a.ref-link:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   opacity: 1;
-  text-decoration-color: var(--accent);
+  text-decoration-color: var(--accent-text);
 }
 
 a.ref-link {
@@ -188,14 +220,18 @@ a.ref-link {
 
 .info-category {
   font-size: 12px;
-  font-weight: 600;
-  color: var(--accent);
+  font-weight: 700;
+  color: var(--accent-text);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
   margin: 22px 0 4px;
 }
 
 #info-name {
-  font-size: 20px;
+  font-family: var(--font-heading);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.15;
   margin: 0 0 12px;
 }
 
@@ -304,10 +340,11 @@ a.ref-link {
 
 #timeline-year-bubble {
   margin-top: 6px;
-  background: var(--accent);
+  background: var(--accent-text);
   color: var(--parchment);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 16px;
+  font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
   white-space: nowrap;
