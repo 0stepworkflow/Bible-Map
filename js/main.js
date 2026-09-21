@@ -151,19 +151,6 @@ const map = new maplibregl.Map({
         }
       },
       {
-        id: 'location-points',
-        type: 'circle',
-        source: 'locations',
-        paint: {
-          'circle-radius': 8,
-          'circle-color': PALETTE.parchment,
-          'circle-stroke-width': 1.5,
-          'circle-stroke-color': PALETTE.ink,
-          'circle-opacity': timelineOpacityExpr(1),
-          'circle-stroke-opacity': timelineOpacityExpr(1)
-        }
-      },
-      {
         id: 'region-labels',
         type: 'symbol',
         source: 'regions',
@@ -217,6 +204,78 @@ const map = new maplibregl.Map({
   }
 });
 
+// Map markers: a parchment disc with the locked Set 1 icon inside (see design/icons/set1 and design/brand-guide.md).
+// Each icon has a see-through colored wash and a wobbly ink line, made with two small SVG filters.
+const MARKER_ICONS = {
+  person: {
+    wash: PALETTE.highland,
+    shapes: '<circle cx="12" cy="7.6" r="3.4"/><path d="M5.2 20.2c.4-4 3.1-6.6 6.8-6.6s6.4 2.6 6.8 6.6z"/>',
+    ink: '<circle cx="12" cy="7.6" r="3.4"/><path d="M5.2 20.2c.4-4 3.1-6.6 6.8-6.6s6.4 2.6 6.8 6.6"/>'
+  },
+  event: {
+    wash: PALETTE.accent,
+    shapes: '<path d="M11 3c.7 4.6 2.3 6.3 6.9 7-4.6.7-6.2 2.4-6.9 7-.7-4.6-2.3-6.3-6.9-7C8.7 9.3 10.3 7.6 11 3z"/>',
+    ink: '<path d="M11 3c.7 4.6 2.3 6.3 6.9 7-4.6.7-6.2 2.4-6.9 7-.7-4.6-2.3-6.3-6.9-7C8.7 9.3 10.3 7.6 11 3z"/><path d="M18.6 14.4c.3 1.9.9 2.5 2.8 2.8-1.9.3-2.5.9-2.8 2.8-.3-1.9-.9-2.5-2.8-2.8 1.9-.3 2.5-.9 2.8-2.8z"/>'
+  },
+  landmark: {
+    wash: PALETTE.water,
+    shapes: '<path d="M3.4 9.6L12 4l8.6 5.6z"/>',
+    ink: '<path d="M3.4 9.6L12 4l8.6 5.6z"/><path d="M6.6 12v6M10.2 12v6M13.8 12v6M17.4 12v6"/><path d="M3.6 20.4h16.8M5 18.4h14"/>'
+  }
+};
+
+const MARKER_SIZE = 34;
+const MARKER_PIXEL_RATIO = 2;
+
+function markerSvg(icon) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + MARKER_SIZE + '" height="' + MARKER_SIZE + '" viewBox="0 0 ' + MARKER_SIZE + ' ' + MARKER_SIZE + '">' +
+    '<defs>' +
+    '<filter id="wander" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0.7"/></filter>' +
+    '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" result="d"/><feGaussianBlur in="d" stdDeviation="0.25"/></filter>' +
+    '</defs>' +
+    '<circle cx="17" cy="17" r="16" fill="' + PALETTE.parchment + '" stroke="' + PALETTE.ink + '" stroke-width="1.5"/>' +
+    '<g transform="translate(5 5)">' +
+    '<g filter="url(#wash)" fill="' + icon.wash + '" fill-opacity="0.55" stroke="none">' + icon.shapes + '</g>' +
+    '<g filter="url(#wander)" fill="none" stroke="' + PALETTE.ink + '" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">' + icon.ink + '</g>' +
+    '</g></svg>';
+}
+
+// The marker layer is added only after all the images are ready, so the map never asks for an image it does not have yet.
+function loadMarkerImages() {
+  const loads = Object.keys(MARKER_ICONS).map(function (category) {
+    return new Promise(function (resolve, reject) {
+      const img = new Image();
+      img.onload = function () {
+        const canvas = document.createElement('canvas');
+        canvas.width = MARKER_SIZE * MARKER_PIXEL_RATIO;
+        canvas.height = MARKER_SIZE * MARKER_PIXEL_RATIO;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        map.addImage('marker-' + category, ctx.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: MARKER_PIXEL_RATIO });
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(markerSvg(MARKER_ICONS[category]));
+    });
+  });
+
+  return Promise.all(loads.concat([loadPinBase()])).then(function () {
+    map.addLayer({
+      id: 'location-points',
+      type: 'symbol',
+      source: 'locations',
+      layout: {
+        'icon-image': ['concat', 'marker-', ['get', 'category']],
+        'icon-size': 1,
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true
+      },
+      paint: { 'icon-opacity': timelineOpacityExpr(1) }
+    }, 'region-labels');
+    applyFocusStyle();
+  });
+}
+
 function focusOpacityExpr() {
   return focusedId
     ? ['case', ['==', ['get', 'id'], focusedId], 1, 0.3]
@@ -224,9 +283,9 @@ function focusOpacityExpr() {
 }
 
 function applyFocusStyle() {
+  if (!map.getLayer('location-points')) return;
   const combined = ['*', timelineOpacityExpr(1), focusOpacityExpr()];
-  map.setPaintProperty('location-points', 'circle-opacity', combined);
-  map.setPaintProperty('location-points', 'circle-stroke-opacity', combined);
+  map.setPaintProperty('location-points', 'icon-opacity', combined);
 }
 
 function applyTimelineStyles() {
@@ -307,32 +366,54 @@ const EMPTY_FC = { type: 'FeatureCollection', features: [] };
 
 const loadedStopIcons = new Set();
 
+// Route stops use the Set 1 drop pin with the stop number where the little circle used to be.
+// The number is drawn with the body font (Shantell Sans), which loadMarkerImages makes sure is ready first.
+const PIN_PATH = 'M12 21.4s-6.6-5.9-6.6-10.9a6.6 6.6 0 1 1 13.2 0c0 5-6.6 10.9-6.6 10.9z';
+const PIN_VIEWBOX = { x: 3.4, y: 2.4, w: 17.2, h: 20 };
+const PIN_SCALE = 2.2;
+const PIN_CENTER = { x: 12, y: 10.4 };
+let pinBaseImage = null;
+
+function pinSvg() {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + PIN_VIEWBOX.w * PIN_SCALE + '" height="' + PIN_VIEWBOX.h * PIN_SCALE + '" viewBox="' + PIN_VIEWBOX.x + ' ' + PIN_VIEWBOX.y + ' ' + PIN_VIEWBOX.w + ' ' + PIN_VIEWBOX.h + '">' +
+    '<defs>' +
+    '<filter id="wander" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="1" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="0.7"/></filter>' +
+    '<filter id="wash" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="2" seed="8" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" result="d"/><feGaussianBlur in="d" stdDeviation="0.25"/></filter>' +
+    '</defs>' +
+    '<g filter="url(#wash)" stroke="none"><path fill="' + PALETTE.parchment + '" d="' + PIN_PATH + '"/><path fill="' + PALETTE.accent + '" fill-opacity="0.55" d="' + PIN_PATH + '"/></g>' +
+    '<g filter="url(#wander)" fill="none" stroke="' + PALETTE.ink + '" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="' + PIN_PATH + '"/></g>' +
+    '</svg>';
+}
+
+function loadPinBase() {
+  const fontReady = document.fonts ? document.fonts.load('700 13px "Shantell Sans"') : Promise.resolve();
+  const imageReady = new Promise(function (resolve, reject) {
+    const img = new Image();
+    img.onload = function () { pinBaseImage = img; resolve(); };
+    img.onerror = reject;
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(pinSvg());
+  });
+  return Promise.all([fontReady, imageReady]);
+}
+
 function ensureStopIcon(index) {
   const id = 'route-stop-dot-' + index;
-  if (loadedStopIcons.has(id)) return;
+  if (loadedStopIcons.has(id) || !pinBaseImage) return;
 
-  const size = 32;
+  const ratio = MARKER_PIXEL_RATIO;
   const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
+  canvas.width = Math.round(PIN_VIEWBOX.w * PIN_SCALE * ratio);
+  canvas.height = Math.round(PIN_VIEWBOX.h * PIN_SCALE * ratio);
   const ctx = canvas.getContext('2d');
-  const radius = size / 2;
+  ctx.drawImage(pinBaseImage, 0, 0, canvas.width, canvas.height);
 
-  ctx.beginPath();
-  ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
-  ctx.fillStyle = PALETTE.accent;
-  ctx.fill();
-  ctx.lineWidth = 2.5;
-  ctx.strokeStyle = PALETTE.parchment;
-  ctx.stroke();
-
-  ctx.fillStyle = PALETTE.parchment;
-  ctx.font = 'bold 14px sans-serif';
+  ctx.fillStyle = PALETTE.ink;
+  ctx.font = '700 ' + 13 * ratio + 'px "Shantell Sans", system-ui, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(String(index), radius, radius + 1);
+  ctx.fillText(String(index), (PIN_CENTER.x - PIN_VIEWBOX.x) * PIN_SCALE * ratio, (PIN_CENTER.y - PIN_VIEWBOX.y) * PIN_SCALE * ratio + ratio);
 
-  map.addImage(id, ctx.getImageData(0, 0, size, size));
+  map.addImage(id, ctx.getImageData(0, 0, canvas.width, canvas.height), { pixelRatio: ratio });
   loadedStopIcons.add(id);
 }
 
@@ -639,6 +720,7 @@ function ensureRouteLayers() {
     layout: {
       'icon-image': ['concat', 'route-stop-dot-', ['to-string', ['get', 'index']]],
       'icon-size': 1,
+      'icon-anchor': 'bottom',
       'icon-allow-overlap': false,
       'text-field': ['format',
         ['get', 'name'], { 'font-scale': 1.05 },
@@ -648,7 +730,7 @@ function ensureRouteLayers() {
       'text-font': ['Noto Sans Bold'],
       'text-size': 12,
       'text-anchor': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
-      'text-offset': ['case', ['==', ['get', 'labelSide'], 'left'], ['literal', [-1.3, 0]], ['literal', [1.3, 0]]],
+      'text-offset': ['case', ['==', ['get', 'labelSide'], 'left'], ['literal', [-1.5, -1.4]], ['literal', [1.5, -1.4]]],
       'text-justify': ['case', ['==', ['get', 'labelSide'], 'left'], 'right', 'left'],
       'text-allow-overlap': false
     },
@@ -666,7 +748,7 @@ function ensureRouteLayers() {
     layout: {
       'icon-image': ['concat', 'route-stop-hint-', ['to-string', ['get', 'count']]],
       'icon-size': 1,
-      'icon-offset': [16, -16],
+      'icon-offset': [15, -40],
       'icon-allow-overlap': true,
       'icon-ignore-placement': true
     }
@@ -705,6 +787,7 @@ window.addEventListener('resize', function () {
 
 map.on('load', function () {
   map.resize();
+  loadMarkerImages();
   applyTimelineStyles();
 
   map.on('moveend', updateStopHints);
